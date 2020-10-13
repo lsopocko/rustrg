@@ -17,7 +17,12 @@ pub struct Map {
     pub visible_tiles: Vec<bool>
 }
 
+const MAPWIDTH: i32 = 80;
+const MAPHEIGHT: i32 = 50;
+const MAPCOUNT: usize = MAPHEIGHT as usize * MAPWIDTH as usize;
+
 impl Map {
+
     pub fn xy_idx(&self, x: i32, y: i32) -> usize {
         (y as usize * self.width as usize) + x as usize
     }
@@ -43,7 +48,7 @@ impl Map {
     fn apply_vertical_tunnel(&mut self, y1:i32, y2:i32, x:i32) {
         for y in min(y1,y2) ..= max(y1,y2) {
             let idx = self.xy_idx(x, y);
-            if idx > 0 && idx < 80*50 {
+            if idx > 0 && idx < MAPCOUNT {
                 self.tiles[idx as usize] = TileType::Floor;
             }
         }
@@ -54,12 +59,12 @@ impl Map {
 
     pub fn new_map_rooms_and_corridors() -> Map {
         let mut map = Map{
-            tiles: vec![TileType::Wall; 80*50],
+            tiles: vec![TileType::Wall; MAPCOUNT],
             rooms: Vec::new(),
-            width: 80,
-            height: 50,
-            revealed_tiles: vec![false; 80*50],
-            visible_tiles: vec![false; 80*50]
+            width: MAPWIDTH,
+            height: MAPHEIGHT,
+            revealed_tiles: vec![false; MAPCOUNT],
+            visible_tiles: vec![false; MAPCOUNT]
         };
 
         const MAX_ROOMS: i32 = 30;
@@ -128,15 +133,15 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
             let mut fg;
             match tile {
                 TileType::Floor => {
-                    glyph = rltk::to_cp437('.');
-                    fg = RGB::from_f32(0.0, 0.5, 0.5);
+                    glyph = 116;
+                    fg = RGB::from_f32(1.0, 1.0, 1.0);
                 }
                 TileType::Wall => {
-                    glyph = rltk::to_cp437('#');
-                    fg = RGB::from_f32(0., 1.0, 0.);
+                    glyph = 17;
+                    fg = RGB::from_f32(1.0, 1.0, 1.0);
                 }
             }
-            if !map.visible_tiles[idx] { fg = fg.to_greyscale() }
+            if !map.visible_tiles[idx] { fg = fg * 0.3; }
             ctx.set(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
         }
 
