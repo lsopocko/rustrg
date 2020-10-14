@@ -1,4 +1,4 @@
-use rltk::{Rltk, GameState, RGB, Point};
+use rltk::{Rltk, GameState, RGB, Point, DrawBatch, ColorPair, render_draw_buffer};
 use specs::prelude::*;
 
 mod components;
@@ -38,7 +38,7 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, ctx : &mut Rltk) {
-        ctx.cls();
+        let mut draw_batch = DrawBatch::new();
 
         if self.runstate == RunState::Running {
             self.run_systems();
@@ -47,33 +47,40 @@ impl GameState for State {
             self.runstate = player_input(self, ctx);
         }
 
-        draw_map(&self.ecs, ctx);
+        draw_map(&self.ecs, &mut draw_batch);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
         let map = self.ecs.fetch::<Map>();
 
+        draw_batch.target(2);
+        draw_batch.cls();
+
         for (pos, render) in (&positions, &renderables).join() {
             let idx = map.xy_idx(pos.x, pos.y);
-            if map.visible_tiles[idx] { ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph) }
+            if map.visible_tiles[idx] {
+                draw_batch.set(Point::new(pos.x, pos.y), ColorPair::new(render.fg, render.bg), render.glyph);
+            }
         }
 
-        // gui::draw_ui(&self.ecs, ctx);
+        draw_batch.submit(0).expect("Batch error");
+        render_draw_buffer(ctx).expect("Render error");
     }
 }
 
-rltk::embedded_resource!(TILE_FONT, "../resources/dungeon_tiles_16x16.png");
+rltk::embedded_resource!(TILE_FONT, "../resources/dungeon_tiles_16x16_2.png");
 
 fn main() -> rltk::BError {
     use rltk::RltkBuilder;
-    rltk::link_resource!(TILE_FONT, "resources/dungeon_tiles_16x16.png");
+    rltk::link_resource!(TILE_FONT, "resources/dungeon_tiles_16x16_2.png");
     let context = RltkBuilder::new()
         .with_dimensions(WIDTH, HEIGHT)
         .with_title("Roguelike Tutorial")
-        .with_tile_dimensions(16, 16)
-        .with_font("dungeon_tiles_16x16.png", 16, 16)
-        .with_simple_console(WIDTH, HEIGHT, "dungeon_tiles_16x16.png")
-        .with_sparse_console_no_bg(WIDTH, HEIGHT, "dungeon_tiles_16x16.png")
+        .with_tile_dimensions(16u32, 16u32)
+        .with_font("dungeon_tiles_16x16_2.png", 16u32, 16u32)
+        .with_simple_console(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
+        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
+        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
         // .with_fullscreen(true)
         .build()?;
 

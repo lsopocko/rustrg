@@ -1,4 +1,5 @@
-use rltk::{ RGB, Rltk, RandomNumberGenerator, Algorithm2D, Point, BaseMap };
+use rltk::{ RGB, Rltk, RandomNumberGenerator, Algorithm2D, Point, BaseMap, DrawBatch, ColorPair };
+use object_pool::{Reusable};
 use super::{Rect};
 use std::cmp::{max, min};
 use specs::prelude::*;
@@ -120,8 +121,11 @@ impl BaseMap for Map {
     }
 }
 
-pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
+pub fn draw_map(ecs: &World, draw_batch: &mut Reusable<'_, DrawBatch>) {
     let map = ecs.fetch::<Map>();
+
+    draw_batch.target(0);
+    draw_batch.cls();
 
     let mut y = 0;
     let mut x = 0;
@@ -133,7 +137,7 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
             let mut fg;
             match tile {
                 TileType::Floor => {
-                    glyph = 116;
+                    glyph = 50;
                     fg = RGB::from_f32(1.0, 1.0, 1.0);
                 }
                 TileType::Wall => {
@@ -142,7 +146,42 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
                 }
             }
             if !map.visible_tiles[idx] { fg = fg * 0.3; }
-            ctx.set(x, y, fg, RGB::from_f32(0., 0., 0.), glyph);
+            draw_batch.set(Point::new(x, y), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), glyph);
+        } else {
+            draw_batch.set(Point::new(x, y), ColorPair::new(RGB::from_f32(1.0, 1.0, 1.0), RGB::from_f32(0., 0., 0.)), 100);
+        }
+
+        // Move the coordinates
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
+    }
+
+    y = 0;
+    x = 0;
+
+    draw_batch.target(1);
+    draw_batch.cls();
+
+    for (idx,tile) in map.tiles.iter().enumerate() {
+        if map.revealed_tiles[idx] {
+            let mut fg = RGB::from_f32(1.0, 1.0, 1.0);
+
+            if !map.visible_tiles[idx] { fg = fg * 0.3; }
+
+            match tile {
+                TileType::Floor => {}
+                TileType::Wall => {
+                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall {
+                        draw_batch.set(Point::from_tuple((x, y-1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 226);
+                    } else {
+                        draw_batch.set(Point::from_tuple((x, y-1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 1);
+                        draw_batch.set(Point::from_tuple((x, y+1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 33);
+                    }
+                }
+            }
         }
 
         // Move the coordinates

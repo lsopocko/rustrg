@@ -1159,6 +1159,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "rgrust"
 version = "0.1.0"
 dependencies = [
+ "object-pool 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rltk 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs-derive 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
