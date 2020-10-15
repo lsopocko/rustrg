@@ -68,19 +68,19 @@ impl GameState for State {
     }
 }
 
-rltk::embedded_resource!(TILE_FONT, "../resources/dungeon_tiles_16x16_2.png");
+rltk::embedded_resource!(TILE_FONT, "../resources/dungeon_tiles_16x16.png");
 
 fn main() -> rltk::BError {
     use rltk::RltkBuilder;
-    rltk::link_resource!(TILE_FONT, "resources/dungeon_tiles_16x16_2.png");
+    rltk::link_resource!(TILE_FONT, "resources/dungeon_tiles_16x16.png");
     let context = RltkBuilder::new()
         .with_dimensions(WIDTH, HEIGHT)
         .with_title("Roguelike Tutorial")
         .with_tile_dimensions(16u32, 16u32)
-        .with_font("dungeon_tiles_16x16_2.png", 16u32, 16u32)
-        .with_simple_console(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
-        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
-        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16_2.png")
+        .with_font("dungeon_tiles_16x16.png", 16u32, 16u32)
+        .with_simple_console(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16.png")
+        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16.png")
+        .with_sparse_console_no_bg(WIDTH as u32, HEIGHT as u32, "dungeon_tiles_16x16.png")
         // .with_fullscreen(true)
         .build()?;
 

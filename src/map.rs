@@ -1,4 +1,4 @@
-use rltk::{ RGB, Rltk, RandomNumberGenerator, Algorithm2D, Point, BaseMap, DrawBatch, ColorPair };
+use rltk::{ RGB, RandomNumberGenerator, Algorithm2D, Point, BaseMap, DrawBatch, ColorPair };
 use object_pool::{Reusable};
 use super::{Rect};
 use std::cmp::{max, min};
@@ -74,7 +74,7 @@ impl Map {
 
         let mut rng = RandomNumberGenerator::new();
 
-        for i in 0..MAX_ROOMS {
+        for _ in 0..MAX_ROOMS {
             let w = rng.range(MIN_SIZE, MAX_SIZE);
             let h = rng.range(MIN_SIZE, MAX_SIZE);
             let x = rng.roll_dice(1, map.width - w - 1) - 1;
@@ -174,11 +174,24 @@ pub fn draw_map(ecs: &World, draw_batch: &mut Reusable<'_, DrawBatch>) {
             match tile {
                 TileType::Floor => {}
                 TileType::Wall => {
-                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall {
-                        draw_batch.set(Point::from_tuple((x, y-1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 226);
-                    } else {
+                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x+1, y)] == TileType::Floor {
+                        draw_batch.set(Point::from_tuple((x, y)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 226);
+                    }
+
+                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x-1, y)] == TileType::Floor {
+                        draw_batch.set(Point::from_tuple((x, y)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 227);
+                    }
+
+                    if (map.tiles[map.xy_idx(x, y)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x, y+1)] == TileType::Floor) ||
+                        (map.tiles[map.xy_idx(x, y)] == TileType::Wall
+                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Floor) {
                         draw_batch.set(Point::from_tuple((x, y-1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 1);
-                        draw_batch.set(Point::from_tuple((x, y+1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 33);
+                        // draw_batch.set(Point::from_tuple((x, y+1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 33);
                     }
                 }
             }
