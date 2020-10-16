@@ -15,6 +15,7 @@ mod monster_ai_system;
 use monster_ai_system::MonsterAI;
 mod gui;
 
+
 const WIDTH: i32 = 80;
 const HEIGHT: i32 = 50;
 
@@ -96,7 +97,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Name>();
 
-    let map : Map = Map::new_map_rooms_and_corridors();
+    let map : Map = Map::load();
     let (player_x, player_y) = map.rooms[0].center();
 
     gs.ecs

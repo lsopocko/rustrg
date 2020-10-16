@@ -3,6 +3,8 @@ use object_pool::{Reusable};
 use super::{Rect};
 use std::cmp::{max, min};
 use specs::prelude::*;
+use rltk::{console};
+use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -15,12 +17,30 @@ pub struct Map {
     pub width: i32,
     pub height: i32,
     pub revealed_tiles: Vec<bool>,
-    pub visible_tiles: Vec<bool>
+    pub visible_tiles: Vec<bool>,
+    pub layers: Vec<Layer>
 }
 
 const MAPWIDTH: i32 = 80;
 const MAPHEIGHT: i32 = 50;
 const MAPCOUNT: usize = MAPHEIGHT as usize * MAPWIDTH as usize;
+
+#[derive(Serialize, Deserialize)]
+pub struct Layer {
+    name: String,
+    data: Vec<u16>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonMap {
+    compressionlevel: i32,
+    height: i32,
+    infinite: bool,
+    layers: Vec<Layer>,
+}
+
+rltk::embedded_resource!(RAW_FILE, "../resources/map.json");
+
 
 impl Map {
 
@@ -55,18 +75,36 @@ impl Map {
         }
     }
 
+
+    fn load_map(&mut self) {
+        rltk::link_resource!(RAW_FILE, "../resources/map.json");
+
+        // Retrieve the raw data as an array of u8 (8-bit unsigned chars)
+        let raw_data = rltk::embedding::EMBED
+            .lock()
+            .get_resource("../resources/map.json".to_string())
+            .unwrap();
+        let raw_string = std::str::from_utf8(&raw_data).expect("Unable to convert to a valid UTF-8 string.");
+        let decoder: JsonMap = serde_json::from_str(&raw_string).expect("Unable to parse JSON");
+
+        self.layers = decoder.layers;
+    }
+
     /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
     /// This gives a handful of random rooms and corridors joining them together.
 
-    pub fn new_map_rooms_and_corridors() -> Map {
+    pub fn load() -> Map {
         let mut map = Map{
             tiles: vec![TileType::Wall; MAPCOUNT],
             rooms: Vec::new(),
+            layers: Vec::new(),
             width: MAPWIDTH,
             height: MAPHEIGHT,
             revealed_tiles: vec![false; MAPCOUNT],
             visible_tiles: vec![false; MAPCOUNT]
         };
+
+        map.load_map();
 
         const MAX_ROOMS: i32 = 30;
         const MIN_SIZE: i32 = 6;
@@ -129,73 +167,11 @@ pub fn draw_map(ecs: &World, draw_batch: &mut Reusable<'_, DrawBatch>) {
 
     let mut y = 0;
     let mut x = 0;
-    for (idx,tile) in map.tiles.iter().enumerate() {
-        // Render a tile depending upon the tile type
+    for glyph in &map.layers[0].data {
 
-        if map.revealed_tiles[idx] {
-            let glyph;
-            let mut fg;
-            match tile {
-                TileType::Floor => {
-                    glyph = 50;
-                    fg = RGB::from_f32(1.0, 1.0, 1.0);
-                }
-                TileType::Wall => {
-                    glyph = 17;
-                    fg = RGB::from_f32(1.0, 1.0, 1.0);
-                }
-            }
-            if !map.visible_tiles[idx] { fg = fg * 0.3; }
-            draw_batch.set(Point::new(x, y), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), glyph);
-        } else {
-            draw_batch.set(Point::new(x, y), ColorPair::new(RGB::from_f32(1.0, 1.0, 1.0), RGB::from_f32(0., 0., 0.)), 100);
-        }
+        draw_batch.set(Point::new(x, y), ColorPair::new(RGB::from_f32(1.0, 1.0, 1.0), RGB::from_f32(0., 0., 0.)), *glyph);
 
-        // Move the coordinates
-        x += 1;
-        if x > 79 {
-            x = 0;
-            y += 1;
-        }
-    }
-
-    y = 0;
-    x = 0;
-
-    draw_batch.target(1);
-    draw_batch.cls();
-
-    for (idx,tile) in map.tiles.iter().enumerate() {
-        if map.revealed_tiles[idx] {
-            let mut fg = RGB::from_f32(1.0, 1.0, 1.0);
-
-            if !map.visible_tiles[idx] { fg = fg * 0.3; }
-
-            match tile {
-                TileType::Floor => {}
-                TileType::Wall => {
-                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x+1, y)] == TileType::Floor {
-                        draw_batch.set(Point::from_tuple((x, y)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 226);
-                    }
-
-                    if map.tiles[map.xy_idx(x, y+1)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x-1, y)] == TileType::Floor {
-                        draw_batch.set(Point::from_tuple((x, y)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 227);
-                    }
-
-                    if (map.tiles[map.xy_idx(x, y)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x, y+1)] == TileType::Floor) ||
-                        (map.tiles[map.xy_idx(x, y)] == TileType::Wall
-                        && map.tiles[map.xy_idx(x, y-1)] == TileType::Floor) {
-                        draw_batch.set(Point::from_tuple((x, y-1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 1);
-                        // draw_batch.set(Point::from_tuple((x, y+1)), ColorPair::new(fg, RGB::from_f32(0., 0., 0.)), 33);
-                    }
-                }
-            }
-        }
+        println!("gluph {}", glyph);
 
         // Move the coordinates
         x += 1;
